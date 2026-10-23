@@ -140,6 +140,16 @@ bool areHolesEqual(const std::vector<std::vector<RNMapsGooglePolygonHolesStruct>
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
 {
+  // Deep-link recycle race (RN 0.88 New Arch): Fabric can call updateProps
+  // with a null pointer or base ViewProps. Both abort downstream; skip —
+  // the following mount transaction carries the fully-typed props.
+  if (props == nullptr) {
+    return;
+  }
+  if (typeid(*props) == typeid(const facebook::react::ViewProps) &&
+      typeid(*_props) != typeid(const facebook::react::ViewProps)) {
+    return;
+  }
   const auto &oldViewProps = *std::static_pointer_cast<RNMapsGooglePolygonProps const>(_props);
   const auto &newViewProps = *std::static_pointer_cast<RNMapsGooglePolygonProps const>(props);
 

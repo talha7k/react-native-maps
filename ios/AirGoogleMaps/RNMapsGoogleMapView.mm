@@ -508,6 +508,19 @@ using namespace facebook::react;
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
 {
+  // Fabric can emit an UpdateProps with a null props pointer (or base
+  // ViewProps instead of RNMapsGoogleMapViewProps) when a screen is mounted
+  // via a deep link while its previous surface is being recycled (observed on
+  // RN 0.88 + New Architecture). Dereferencing/casting either here aborts the
+  // app (SIGABRT via RCTViewComponentView's props assert). Skip the update;
+  // the following mount transaction carries the fully-typed props.
+  if (props == nullptr) {
+    return;
+  }
+  if (typeid(*props) == typeid(const facebook::react::ViewProps) &&
+      typeid(*_props) != typeid(const facebook::react::ViewProps)) {
+    return;
+  }
   const auto &oldViewProps = *std::static_pointer_cast<RNMapsGoogleMapViewProps const>(_props);
   const auto &newViewProps = *std::static_pointer_cast<RNMapsGoogleMapViewProps const>(props);
 
